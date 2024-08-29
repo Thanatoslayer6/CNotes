@@ -6,7 +6,6 @@ int main(int argc, char** argv) {
 
     // Check configuration
     check_configuration();
-    check_repository();
 
     // Sync from remote to get latest changes
     // CODE HERE

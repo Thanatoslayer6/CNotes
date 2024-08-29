@@ -48,13 +48,15 @@ void check_configuration() {
         exit(EXIT_FAILURE);
     }
 
-    printf("Notes repository: %s\n", notes_repository.u.s);
+    check_repository(notes_repository.u.s);
 
+    toml_free(tbl);
     free(file_contents);
 }
 
-void check_repository() {
+void check_repository(const char* repo_path) {
     // First check if the directory exists
+    printf(repo_path);
 }
 
 void check_configuration_file(const char* filepath) {

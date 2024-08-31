@@ -4,6 +4,9 @@
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <dirent.h>
+
+char* NOTES_REPOSITORY = NULL;
 
 void check_command(const char* command_name) {
     char command[256];
@@ -19,7 +22,7 @@ void check_command(const char* command_name) {
 
 void check_configuration() {
     // First check if there's a file at ~/.config/cnotes/config
-    char *home = getenv (HOMEENV);
+    char *home = getenv(HOMEENV);
     char filename[PATH_MAX] = "";
 
     if (!home) {
@@ -27,7 +30,7 @@ void check_configuration() {
         exit(EXIT_FAILURE);
     }
 
-    sprintf(filename, CONFIGPATH, home);
+    snprintf(filename, PATH_MAX, CONFIGPATH, home);
  
     check_configuration_file(filename);
 
@@ -48,15 +51,51 @@ void check_configuration() {
         exit(EXIT_FAILURE);
     }
 
-    check_repository(notes_repository.u.s);
+    // Allocate memory for NOTES_REPOSITORY
+    NOTES_REPOSITORY = (char*)malloc(sizeof(char) * strlen(notes_repository.u.s));
+    if (NOTES_REPOSITORY == NULL) {
+        fprintf(stderr, "ERROR: Failed to allocate memory to `NOTES_REPOSITORY`\n");
+        exit(EXIT_FAILURE);
+    }
+    strcpy(NOTES_REPOSITORY, notes_repository.u.s);
 
+    // Free memory
     toml_free(tbl);
     free(file_contents);
 }
 
-void check_repository(const char* repo_path) {
+void check_repository() {
     // First check if the directory exists
-    printf(repo_path);
+    printf("Notes repository: %s \n", NOTES_REPOSITORY);
+    DIR* dir = opendir(NOTES_REPOSITORY);
+    char errbuf[200];
+    char option;
+
+    if (dir) {
+        printf("Notes repository exists ");
+        /* Directory exists. */
+        closedir(dir);
+    } else if (ENOENT == errno) {
+        int create_repo = prompt("Notes repository does not exist, do you wish to create it?");
+        if (create_repo) {
+            execute("mkdir", NOTES_REPOSITORY);
+        } else {
+            printf("Nothing to do, exiting program...\n");
+            exit(EXIT_SUCCESS);
+        }
+        /* Directory does not exist. */
+    } else {
+        fprintf(stderr, "ERROR: Notes repository is not a directory!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    check_repository_status();
+}
+
+void check_repository_status() {
+    // TODO: Create functions for knowing if directory exists or not, 
+    // check for .git directory, ask user if want to initialize along with remote & branch
+    // TODO: sync method
 }
 
 void check_configuration_file(const char* filepath) {

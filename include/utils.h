@@ -20,3 +20,5 @@
 #endif
 
 char *file_read(const char *filepath);
+int prompt(const char* text);
+void execute(const char* command, const char* args);

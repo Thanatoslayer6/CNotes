@@ -1,10 +1,8 @@
 #include "check.h"
 #include "toml-c.h"
-#include "utils.h"
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <dirent.h>
 
 char* NOTES_REPOSITORY = NULL;
 
@@ -66,24 +64,19 @@ void check_configuration() {
 
 void check_repository() {
     // First check if the directory exists
-    printf("Notes repository: %s \n", NOTES_REPOSITORY);
-    DIR* dir = opendir(NOTES_REPOSITORY);
-    char errbuf[200];
     char option;
+    int dirstatus = directory_check(NOTES_REPOSITORY);
 
-    if (dir) {
-        printf("Notes repository exists ");
-        /* Directory exists. */
-        closedir(dir);
-    } else if (ENOENT == errno) {
-        int create_repo = prompt("Notes repository does not exist, do you wish to create it?");
-        if (create_repo) {
+    if (dirstatus == 1) {
+        printf("Notes repository exists...\n");
+    } else if (dirstatus == 0) {
+        int create_dir_status = prompt("Notes repository does not exist, do you wish to create it?");
+        if (create_dir_status) {
             execute("mkdir", NOTES_REPOSITORY);
         } else {
             printf("Nothing to do, exiting program...\n");
             exit(EXIT_SUCCESS);
         }
-        /* Directory does not exist. */
     } else {
         fprintf(stderr, "ERROR: Notes repository is not a directory!\n");
         exit(EXIT_FAILURE);
@@ -94,8 +87,50 @@ void check_repository() {
 
 void check_repository_status() {
     // TODO: Create functions for knowing if directory exists or not, 
-    // check for .git directory, ask user if want to initialize along with remote & branch
-    // TODO: sync method
+    char git_repo[PATH_MAX] = "";
+
+    #ifdef HAVEWIN
+        snprintf(git_repo, PATH_MAX, "%s\\.git", NOTES_REPOSITORY);
+    #elif HAVEUNIX
+        snprintf(git_repo, PATH_MAX, "%s/.git", NOTES_REPOSITORY);
+    #endif
+
+    int dirstatus = directory_check(git_repo);
+
+    if (dirstatus == 1) {
+        printf("Git repository exists...\n");
+    } else if (dirstatus == 0) {
+        int create_repo_status = prompt("Initialize Git repository?");
+        if (create_repo_status) {
+            // Set up user, branch, and remote
+            execute_cd(NOTES_REPOSITORY, "git init", "-b main"); // default branch is main
+            char *user_name = read_line("What is your Git username? (enclose with quotation): ");
+            execute_cd(NOTES_REPOSITORY, "git config user.name", user_name);
+
+            char *user_email = read_line("What is your Git email?: ");
+            execute_cd(NOTES_REPOSITORY, "git config user.email", user_email);
+
+            char *remote_url = read_line("What is the Git remote?: ");
+            execute_cd(NOTES_REPOSITORY, "git remote add origin", remote_url);
+
+            free(user_name);
+            free(user_email);
+            free(remote_url);
+
+        } else {
+            printf("Nothing to do, exiting program...\n");
+            exit(EXIT_SUCCESS);
+        }
+    } else {
+        fprintf(stderr, "ERROR: `.git/` folder is not a directory!\n");
+        exit(EXIT_FAILURE);
+    }
+}
+
+void check_sync() {
+   // TODO: Create method, git pull
+   // branch = notebook 
+   // files = page
 }
 
 void check_configuration_file(const char* filepath) {
@@ -109,7 +144,7 @@ void check_configuration_file(const char* filepath) {
             " Please create a configuration file named 'config.toml' in the specified directory.\n"
             " This file should contain the following settings:\n\n"
             "  notes_repository = \"/absolute/path/to/your/notes\"\n"
-            "\n Note: Make sure that 'notes_respository' is an absolute path.\n\n";
+            "\n Note: Make sure that 'notes_respository' is an absolute path not ending with '/'.\n\n";
 
         fprintf(stderr, generate_info_text, filepath);
         exit(EXIT_FAILURE);

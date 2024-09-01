@@ -1,7 +1,8 @@
 #include <utils.h>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <dirent.h>
+#include <errno.h>
 
 char *file_read(const char *filepath) {
     FILE *file_ptr = fopen(filepath, "rb"); // Read file
@@ -62,10 +63,67 @@ void execute(const char* command, const char* args) {
     char full_command[4096] = "";
     snprintf(full_command, 4096, "%s %s", command, args);
     if (!system(full_command)) {
-        printf("Successfully executed - %s", full_command);
+        printf("Successfully executed - %s\n", full_command);
         return;
     }
     
     fprintf(stderr, "ERROR: Failed to execute command - %s\n", full_command);
     exit(EXIT_FAILURE);
+}
+
+void execute_cd(const char* cddir, const char* command, const char* args) {
+    char full_command[4096] = "";
+    snprintf(full_command, 4096, "cd %s && %s %s", cddir, command, args);
+
+    if (!system(full_command)) {
+        printf("Successfully executed - %s\n", full_command);
+        return;
+    }
+    
+    fprintf(stderr, "ERROR: Failed to execute command - %s\n", full_command);
+    exit(EXIT_FAILURE);
+}
+
+int directory_check(const char* path) {
+    DIR* dir = opendir(path);
+    if (dir) {
+        closedir(dir);
+        return 1;
+    } else if (ENOENT == errno) {
+        closedir(dir);
+        return 0;
+    }
+    closedir(dir);
+    return -1;
+}
+
+char* read_line(const char* prompt) {
+    printf("%s", prompt);
+
+    size_t size = 128;
+    char *line = malloc(size);
+    if (!line) {
+        perror("malloc");
+        return NULL;
+    }
+
+    size_t len = 0;
+    int ch;
+    while ((ch = fgetc(stdin)) != EOF && ch != '\n') {
+        if (len + 1 >= size) {
+            size *= 2; // Double the size
+            char *new_line = realloc(line, size);
+            if (!new_line) {
+                perror("realloc");
+                free(line);
+                return NULL;
+            }
+            line = new_line;
+        }
+        line[len++] = (char)ch;
+    }
+
+    line[len] = '\0'; // Null-terminate the string
+
+    return line;
 }

@@ -3,11 +3,14 @@
 int main(int argc, char** argv) {
     // Check app requirements
     check_command("git");
+    check_command("vim");
 
     // Check configuration
     check_configuration();
 
     check_repository();
+
+    check_sync();
 
     // Sync from remote to get latest changes
     // CODE HERE

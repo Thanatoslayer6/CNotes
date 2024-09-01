@@ -23,5 +23,5 @@ char *file_read(const char *filepath);
 char *read_line(const char *prompt);
 int prompt(const char* text);
 void execute(const char* command, const char* args);
-void execute_cd(const char* cddir, const char* command, const char* args);
+void execute_cd(const char* cddir, const char* command, const char* args, int failsafe);
 int directory_check(const char* path);

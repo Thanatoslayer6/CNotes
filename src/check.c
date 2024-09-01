@@ -1,5 +1,6 @@
 #include "check.h"
 #include "toml-c.h"
+#include "utils.h"
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -68,7 +69,7 @@ void check_repository() {
     int dirstatus = directory_check(NOTES_REPOSITORY);
 
     if (dirstatus == 1) {
-        printf("Notes repository exists...\n");
+        printf("Notes directory exists...\n");
     } else if (dirstatus == 0) {
         int create_dir_status = prompt("Notes repository does not exist, do you wish to create it?");
         if (create_dir_status) {
@@ -86,7 +87,6 @@ void check_repository() {
 }
 
 void check_repository_status() {
-    // TODO: Create functions for knowing if directory exists or not, 
     char git_repo[PATH_MAX] = "";
 
     #ifdef HAVEWIN
@@ -103,15 +103,15 @@ void check_repository_status() {
         int create_repo_status = prompt("Initialize Git repository?");
         if (create_repo_status) {
             // Set up user, branch, and remote
-            execute_cd(NOTES_REPOSITORY, "git init", "-b main"); // default branch is main
+            execute_cd(NOTES_REPOSITORY, "git init", "-b main", 1); // default branch is main
             char *user_name = read_line("What is your Git username? (enclose with quotation): ");
-            execute_cd(NOTES_REPOSITORY, "git config user.name", user_name);
+            execute_cd(NOTES_REPOSITORY, "git config user.name", user_name, 1);
 
             char *user_email = read_line("What is your Git email?: ");
-            execute_cd(NOTES_REPOSITORY, "git config user.email", user_email);
+            execute_cd(NOTES_REPOSITORY, "git config user.email", user_email, 1);
 
             char *remote_url = read_line("What is the Git remote?: ");
-            execute_cd(NOTES_REPOSITORY, "git remote add origin", remote_url);
+            execute_cd(NOTES_REPOSITORY, "git remote add origin", remote_url, 1);
 
             free(user_name);
             free(user_email);
@@ -128,9 +128,15 @@ void check_repository_status() {
 }
 
 void check_sync() {
-   // TODO: Create method, git pull
-   // branch = notebook 
-   // files = page
+    // Get updates from remote
+    execute_cd(NOTES_REPOSITORY, "git remote", "update", 0);
+    // execute_cd(NOTES_REPOSITORY, "git pull", "origin main", 0);
+    // execute_cd(NOTES, const char *command, const char *args, int failsafe)
+
+    // const char* upstream = (argc > 1) ? argv[1] : "@{u}";
+    // Prepare the Git commands
+
+    // execute_cd(NOTES_REPOSITORY, "git push", "-u origin main", 0);
 }
 
 void check_configuration_file(const char* filepath) {
@@ -144,7 +150,7 @@ void check_configuration_file(const char* filepath) {
             " Please create a configuration file named 'config.toml' in the specified directory.\n"
             " This file should contain the following settings:\n\n"
             "  notes_repository = \"/absolute/path/to/your/notes\"\n"
-            "\n Note: Make sure that 'notes_respository' is an absolute path not ending with '/'.\n\n";
+            "\n Note: Make sure that 'notes_respository' is an absolute path NOT ending with '/'.\n\n";
 
         fprintf(stderr, generate_info_text, filepath);
         exit(EXIT_FAILURE);

@@ -71,7 +71,7 @@ void execute(const char* command, const char* args) {
     exit(EXIT_FAILURE);
 }
 
-void execute_cd(const char* cddir, const char* command, const char* args) {
+void execute_cd(const char* cddir, const char* command, const char* args, int failsafe) {
     char full_command[4096] = "";
     snprintf(full_command, 4096, "cd %s && %s %s", cddir, command, args);
 
@@ -79,9 +79,11 @@ void execute_cd(const char* cddir, const char* command, const char* args) {
         printf("Successfully executed - %s\n", full_command);
         return;
     }
-    
-    fprintf(stderr, "ERROR: Failed to execute command - %s\n", full_command);
-    exit(EXIT_FAILURE);
+
+    if (failsafe)  {
+        fprintf(stderr, "ERROR: Failed to execute command - %s\n", full_command);
+        exit(EXIT_FAILURE);
+    }
 }
 
 int directory_check(const char* path) {

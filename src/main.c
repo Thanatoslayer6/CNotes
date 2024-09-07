@@ -13,12 +13,7 @@ int main(int argc, char** argv) {
 
     // Check configuration
     check_configuration();
-    // If no configuration exists, ask the user if 
-    // - Create a new notes repository
-    // - Use an existing notes repository
-    //     [requires GitHub repo remote]
-
-    // check_repository();
+    check_repository();
     // check_sync();
 
     // execute_cd(NOTES_REPOSITORY, "fzf" ,"--preview=\'cat {}\' --preview-window=right:70%:wrap");

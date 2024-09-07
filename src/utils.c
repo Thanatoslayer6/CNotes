@@ -1,8 +1,7 @@
 #include <utils.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <dirent.h>
 #include <errno.h>
+#include <time.h>
 
 char *file_read(const char *filepath) {
     FILE *file_ptr = fopen(filepath, "rb"); // Read file
@@ -50,7 +49,7 @@ int prompt(const char* text) {
             return 0; // No
         } else {
             // Invalid input; prompt again
-            printf("Invalid input. Please enter 'Y' or 'N'.\n");
+            printf(" - Invalid input. Please enter 'Y' or 'N'.\n");
 
             option = getchar();
             // Clear the input buffer
@@ -63,27 +62,25 @@ void execute(const char* command, const char* args) {
     char full_command[4096] = "";
     snprintf(full_command, 4096, "%s %s", command, args);
     if (!system(full_command)) {
-        printf("Successfully executed - %s\n", full_command);
+        printf("    Successfully executed - %s\n", full_command);
         return;
     }
     
-    fprintf(stderr, "ERROR: Failed to execute command - %s\n", full_command);
+    fprintf(stderr, " - ERROR: Failed to execute command - %s\n", full_command);
     exit(EXIT_FAILURE);
 }
 
-void execute_cd(const char* cddir, const char* command, const char* args, int failsafe) {
+void execute_cd(const char* cddir, const char* command, const char* args) {
     char full_command[4096] = "";
     snprintf(full_command, 4096, "cd %s && %s %s", cddir, command, args);
 
     if (!system(full_command)) {
-        printf("Successfully executed - %s\n", full_command);
+        printf("    Successfully executed - %s\n", full_command);
         return;
     }
 
-    if (failsafe)  {
-        fprintf(stderr, "ERROR: Failed to execute command - %s\n", full_command);
-        exit(EXIT_FAILURE);
-    }
+    fprintf(stderr, " - ERROR: Failed to execute command - %s\n", full_command);
+    exit(EXIT_FAILURE);
 }
 
 int directory_check(const char* path) {
@@ -128,4 +125,39 @@ char* read_line(const char* prompt) {
     line[len] = '\0'; // Null-terminate the string
 
     return line;
+}
+
+char* get_time() {
+    // Get the current time
+    time_t now;
+    time(&now);
+
+    // Convert to local time
+    struct tm *local = localtime(&now);
+
+    // Buffer to hold the formatted time string
+    char *buffer = (char*)malloc(sizeof(char) * 64);
+
+    // Format the time as YYYY-MM-DD HH:MM:SS
+    strftime(buffer, sizeof(buffer), "\"%Y-%m-%d %H:%M:%S\"", local);
+
+    return buffer;
+}
+
+void execute_cd_out(const char* cddir, const char *command, const char* args, char *output, size_t output_size) {
+    char full_command[4096] = "";
+    snprintf(full_command, 4096, "cd %s && %s %s", cddir, command, args);
+
+    FILE *fp;
+    fp = popen(full_command, "r");
+    if (fp == NULL) {
+        perror("popen");
+        exit(EXIT_FAILURE);
+    }
+    if (fgets(output, output_size, fp) == NULL) {
+        perror("fgets");
+        pclose(fp);
+        exit(EXIT_FAILURE);
+    }
+    pclose(fp);
 }

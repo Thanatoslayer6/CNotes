@@ -53,19 +53,23 @@ void check_configuration() {
         fprintf(stderr, " - ERROR: Can't parse 'local_repository_path', %s\n", errbuf);
         exit(EXIT_FAILURE);
     }
+
     toml_value_t remote_repository_url = toml_table_string(tbl, "remote_repository_url");
     if (!remote_repository_url.ok) {
         fprintf(stderr, " - ERROR: Can't parse 'remote_repository_url', %s\n", errbuf);
         exit(EXIT_FAILURE);
     }
+
     toml_value_t git_username = toml_table_string(tbl, "git_username");
     if (!git_username.ok) {
-        printf(" - WARNING: No Git username specified in config\n");
+        fprintf(stderr, " - ERROR: Can't parse 'git_username', %s\n", errbuf);
+        exit(EXIT_FAILURE);
     }
 
     toml_value_t git_email = toml_table_string(tbl, "git_email");
     if (!git_email.ok) {
-        printf(" - WARNING: No Git email specified in config\n");
+        fprintf(stderr, " - ERROR: Can't parse 'git_email', %s\n", errbuf);
+        exit(EXIT_FAILURE);
     }
 
     // Allocate memory for LOCAL_REPO_PATH and REMOTE_REPOSITORY_URL
@@ -74,30 +78,28 @@ void check_configuration() {
         fprintf(stderr, " - ERROR: Failed to allocate memory to `LOCAL_REPO_PATH`\n");
         exit(EXIT_FAILURE);
     }
-    strcpy(LOCAL_REPO_PATH, local_repository_path.u.s);
+    strncpy(LOCAL_REPO_PATH, local_repository_path.u.s, strlen(local_repository_path.u.s));
 
     REMOTE_REPO_URL = (char*)malloc(sizeof(char) * strlen(remote_repository_url.u.s));
     if (REMOTE_REPO_URL == NULL) {
         fprintf(stderr, " - ERROR: Failed to allocate memory to `REMOTE_REPO_URL`\n");
         exit(EXIT_FAILURE);
     }
-    strcpy(REMOTE_REPO_URL, remote_repository_url.u.s);
+    strncpy(REMOTE_REPO_URL, remote_repository_url.u.s, strlen(remote_repository_url.u.s));
 
-    // Parse git username and email
-    if (git_username.ok && git_email.ok) {
-        GIT_USERNAME = (char*)malloc(sizeof(char) * strlen(git_username.u.s));
-        if (GIT_USERNAME == NULL) {
-            fprintf(stderr, " - ERROR: Failed to allocate memory to `GIT_USERNAME`\n");
-            exit(EXIT_FAILURE);
-        }
-        strcpy(GIT_USERNAME, git_username.u.s);
-        GIT_EMAIL = (char*)malloc(sizeof(char) * strlen(git_email.u.s));
-        if (GIT_EMAIL == NULL) {
-            fprintf(stderr, " - ERROR: Failed to allocate memory to `GIT_EMAIL`\n");
-            exit(EXIT_FAILURE);
-        }
-        strcpy(GIT_EMAIL, git_email.u.s);
+    GIT_USERNAME = (char*)malloc(sizeof(char) * strlen(git_username.u.s));
+    if (GIT_USERNAME == NULL) {
+        fprintf(stderr, " - ERROR: Failed to allocate memory to `GIT_USERNAME`\n");
+        exit(EXIT_FAILURE);
     }
+    strncpy(GIT_USERNAME, git_username.u.s, strlen(git_username.u.s));
+
+    GIT_EMAIL = (char*)malloc(sizeof(char) * strlen(git_email.u.s));
+    if (GIT_EMAIL == NULL) {
+        fprintf(stderr, " - ERROR: Failed to allocate memory to `GIT_EMAIL`\n");
+        exit(EXIT_FAILURE);
+    }
+    strncpy(GIT_EMAIL, git_email.u.s, strlen(git_email.u.s));
 
     // Free memory
     toml_free(tbl);
@@ -106,7 +108,7 @@ void check_configuration() {
 
 void check_repository() {
     // First check if the directory exists
-    char option;
+    // char option;
     int dirstatus = directory_check(LOCAL_REPO_PATH);
 
     if (dirstatus == 1) {
@@ -114,10 +116,14 @@ void check_repository() {
     } else if (dirstatus == 0) {
         int create_dir_status = prompt(" - Notes repository does not exist, do you wish to clone the remote repository?");
         if (create_dir_status) {
-            // execute("mkdir", LOCAL_REPO_PATH);
             char args[PATH_MAX] = "";
             snprintf(args, PATH_MAX, "%s %s", REMOTE_REPO_URL, LOCAL_REPO_PATH);
             execute("git clone", args);
+
+            // After cloning simply configure git username and email
+            execute_cd(LOCAL_REPO_PATH, "git config user.name", GIT_USERNAME);
+            execute_cd(LOCAL_REPO_PATH, "git config user.email", GIT_EMAIL);
+
         } else {
             printf(" - Nothing to do, exiting program...\n");
             exit(EXIT_SUCCESS);
@@ -128,9 +134,11 @@ void check_repository() {
     }
 
     // TODO: Do we need to add a git username and email config as required?
-    check_repository_status();
+    // check_repository_status();
 }
 
+
+/*
 void check_repository_status() {
     char git_repo[PATH_MAX] = "";
 
@@ -173,7 +181,7 @@ void check_repository_status() {
         exit(EXIT_FAILURE);
     }
 }
-
+*/
 
 void check_sync() {
     char status_output[1024];

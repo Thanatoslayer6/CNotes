@@ -3,6 +3,18 @@
 #include <errno.h>
 #include <time.h>
 
+int file_exists(const char *filename)
+{
+    FILE *fp = fopen(filename, "r");
+    int is_exist = 0;
+    if (fp != NULL)
+    {
+        is_exist = 1;
+        fclose(fp); // close the file
+    }
+    return is_exist;
+}
+
 char *file_read(const char *filepath) {
     FILE *file_ptr = fopen(filepath, "rb"); // Read file
     size_t i = 0, c = 0;
@@ -58,28 +70,28 @@ int prompt(const char* text) {
     }
 }
 
-void execute(const char* command, const char* args) {
+void execute(const char* command, const char* args, int show_debug) {
     char full_command[4096] = "";
     snprintf(full_command, 4096, "%s %s", command, args);
     if (!system(full_command)) {
-        printf("    Successfully executed - %s\n", full_command);
+        if (show_debug) printf("    Successfully executed - %s\n", full_command);
         return;
     }
     
-    fprintf(stderr, " - ERROR: Failed to execute command - %s\n", full_command);
+    if (show_debug) fprintf(stderr, " - ERROR: Failed to execute command - %s\n", full_command);
     exit(EXIT_FAILURE);
 }
 
-void execute_cd(const char* cddir, const char* command, const char* args) {
+void execute_cd(const char* cddir, const char* command, const char* args, int show_debug) {
     char full_command[4096] = "";
     snprintf(full_command, 4096, "cd %s && %s %s", cddir, command, args);
 
     if (!system(full_command)) {
-        printf("    Successfully executed - %s\n", full_command);
+        if (show_debug) printf("    Successfully executed - %s\n", full_command);
         return;
     }
 
-    fprintf(stderr, " - ERROR: Failed to execute command - %s\n", full_command);
+    if (show_debug) fprintf(stderr, " - ERROR: Failed to execute command - %s\n", full_command);
     exit(EXIT_FAILURE);
 }
 
@@ -151,13 +163,19 @@ void execute_cd_out(const char* cddir, const char *command, const char* args, ch
     FILE *fp;
     fp = popen(full_command, "r");
     if (fp == NULL) {
-        perror("popen");
+        // perror("popen");
+        // fprintf(stderr, "")
+        fprintf(stderr, " - ERROR: Failed to run `popen`");
         exit(EXIT_FAILURE);
     }
-    if (fgets(output, output_size, fp) == NULL) {
-        perror("fgets");
+
+    if (fgets(output, output_size, fp) == NULL) { 
+        // perror("fgets");
+        // fprintf(stderr, " - ERROR: No note selected");
+        // printf(" - No note selected, exiting program...\n");
         pclose(fp);
         exit(EXIT_FAILURE);
     }
+
     pclose(fp);
 }

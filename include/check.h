@@ -1,9 +1,9 @@
 #pragma once
 
-extern char* LOCAL_REPO_PATH;
-extern char* REMOTE_REPO_URL;
-extern char* GIT_USERNAME;
-extern char* GIT_EMAIL;
+extern char LOCAL_REPO_PATH[];
+extern char REMOTE_REPO_URL[];
+extern char GIT_USERNAME[];
+extern char GIT_EMAIL[];
 
 void check_command(const char* command_name);
 void check_configuration();

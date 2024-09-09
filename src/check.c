@@ -1,15 +1,14 @@
 #include "check.h"
 #include "toml-c.h"
 #include "utils.h"
-#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-char* LOCAL_REPO_PATH = NULL;
-char* REMOTE_REPO_URL = NULL;
-char* GIT_USERNAME = NULL;
-char* GIT_EMAIL = NULL;
+char LOCAL_REPO_PATH[2048];
+char REMOTE_REPO_URL[2048];
+char GIT_USERNAME[2048];
+char GIT_EMAIL[2048];
 
 void check_command(const char* command_name) {
     char command[256];
@@ -26,14 +25,14 @@ void check_command(const char* command_name) {
 void check_configuration() {
     // First check if there's a file at ~/.config/noets/config.toml
     char *home = getenv(HOMEENV);
-    char filename[PATH_MAX] = "";
+    char filename[4096] = "";
 
     if (!home) {
         fprintf (stderr, " - User home environment not found.\n");
         exit(EXIT_FAILURE);
     }
 
-    snprintf(filename, PATH_MAX, CONFIGPATH, home);
+    snprintf(filename, 4096, CONFIGPATH, home);
  
     check_configuration_file(filename);
 
@@ -72,34 +71,10 @@ void check_configuration() {
         exit(EXIT_FAILURE);
     }
 
-    // Allocate memory for LOCAL_REPO_PATH and REMOTE_REPOSITORY_URL
-    LOCAL_REPO_PATH = (char*)malloc(sizeof(char) * strlen(local_repository_path.u.s));
-    if (LOCAL_REPO_PATH == NULL) {
-        fprintf(stderr, " - ERROR: Failed to allocate memory to `LOCAL_REPO_PATH`\n");
-        exit(EXIT_FAILURE);
-    }
-    strncpy(LOCAL_REPO_PATH, local_repository_path.u.s, strlen(local_repository_path.u.s));
-
-    REMOTE_REPO_URL = (char*)malloc(sizeof(char) * strlen(remote_repository_url.u.s));
-    if (REMOTE_REPO_URL == NULL) {
-        fprintf(stderr, " - ERROR: Failed to allocate memory to `REMOTE_REPO_URL`\n");
-        exit(EXIT_FAILURE);
-    }
-    strncpy(REMOTE_REPO_URL, remote_repository_url.u.s, strlen(remote_repository_url.u.s));
-
-    GIT_USERNAME = (char*)malloc(sizeof(char) * strlen(git_username.u.s));
-    if (GIT_USERNAME == NULL) {
-        fprintf(stderr, " - ERROR: Failed to allocate memory to `GIT_USERNAME`\n");
-        exit(EXIT_FAILURE);
-    }
-    strncpy(GIT_USERNAME, git_username.u.s, strlen(git_username.u.s));
-
-    GIT_EMAIL = (char*)malloc(sizeof(char) * strlen(git_email.u.s));
-    if (GIT_EMAIL == NULL) {
-        fprintf(stderr, " - ERROR: Failed to allocate memory to `GIT_EMAIL`\n");
-        exit(EXIT_FAILURE);
-    }
-    strncpy(GIT_EMAIL, git_email.u.s, strlen(git_email.u.s));
+    snprintf(LOCAL_REPO_PATH, sizeof(LOCAL_REPO_PATH), local_repository_path.u.s);
+    snprintf(REMOTE_REPO_URL, sizeof(REMOTE_REPO_URL), remote_repository_url.u.s);
+    snprintf(GIT_USERNAME, sizeof(GIT_USERNAME), git_username.u.s);
+    snprintf(GIT_EMAIL, sizeof(GIT_EMAIL), git_email.u.s);
 
     // Free memory
     toml_free(tbl);
@@ -111,30 +86,26 @@ void check_repository() {
     // char option;
     int dirstatus = directory_check(LOCAL_REPO_PATH);
 
-    if (dirstatus == 1) {
-        printf(" - Notes directory exists...\n");
-    } else if (dirstatus == 0) {
-        int create_dir_status = prompt(" - Notes repository does not exist, do you wish to clone the remote repository?");
+    if (dirstatus == 0) {
+        int create_dir_status = prompt(" - Notes repository does not exist, clone the remote repository?");
         if (create_dir_status) {
-            char args[PATH_MAX] = "";
-            snprintf(args, PATH_MAX, "%s %s", REMOTE_REPO_URL, LOCAL_REPO_PATH);
-            execute("git clone", args);
+            char args[4096] = "";
+            snprintf(args, 4096, "%s %s", REMOTE_REPO_URL, LOCAL_REPO_PATH);
+            execute("git clone", args, 1);
 
             // After cloning simply configure git username and email
-            execute_cd(LOCAL_REPO_PATH, "git config user.name", GIT_USERNAME);
-            execute_cd(LOCAL_REPO_PATH, "git config user.email", GIT_EMAIL);
+            execute_cd(LOCAL_REPO_PATH, "git config user.name", GIT_USERNAME, 1);
+            execute_cd(LOCAL_REPO_PATH, "git config user.email", GIT_EMAIL, 1);
 
         } else {
             printf(" - Nothing to do, exiting program...\n");
             exit(EXIT_SUCCESS);
         }
-    } else {
+    } else if (dirstatus == -1) {
         fprintf(stderr, " - ERROR: Notes repository is not a directory!\n");
         exit(EXIT_FAILURE);
     }
 
-    // TODO: Do we need to add a git username and email config as required?
-    // check_repository_status();
 }
 
 
@@ -155,7 +126,6 @@ void check_repository_status() {
     } else if (dirstatus == 0) {
         int create_repo_status = prompt(" - Clone Git repository?");
         if (create_repo_status) {
-            // TODO: Do this now you have the remote repo at the config file...
             execute("git clone", REMOTE_REPO_URL);
             // Set up user, branch, and remote
             // execute_cd(LOCAL_REPO_PATH, "git init", "-b main"); // default branch is main
@@ -183,6 +153,7 @@ void check_repository_status() {
 }
 */
 
+/*
 void check_sync() {
     char status_output[1024];
     // char rev_parse_output[1024];
@@ -207,6 +178,8 @@ void check_sync() {
         printf("You are behind the remote branch.\n");
     } else if (strstr(status_output, "Your branch is ahead")) {
         printf("You are ahead of the remote branch.\n");
+    } else if (strstr(status_output, "No commits yet")) {
+        printf("No commits yet");
     } else {
         printf("Your branch is up to date with the remote.\n");
     }
@@ -226,6 +199,7 @@ void check_sync() {
 
     // execute_cd(NOTES_REPOSITORY, "git push", "-u origin main", 0);
 }
+*/
 
 void check_configuration_file(const char* filepath) {
     FILE *file_ptr = fopen(filepath, "r");

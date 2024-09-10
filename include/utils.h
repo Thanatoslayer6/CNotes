@@ -45,5 +45,5 @@ char *get_time();
 int prompt(const char* text);
 void execute(const char* command, const char* args, int show_debug);
 void execute_cd(const char* cddir, const char* command, const char* args, int show_debug);
-void execute_cd_out(const char* cddir, const char *command, const char* args, char *output, size_t output_size);
+char *execute_cd_out(const char* cddir, const char *command, const char* args);
 int directory_check(const char* path);

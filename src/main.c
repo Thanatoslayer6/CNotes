@@ -10,33 +10,14 @@ int main(int argc, char** argv) {
     // Check app requirements
     check_command("git");
     check_command("vim");
-    // check_command("fzf");
+    check_command("fzf");
 
     // Check configuration
     check_configuration();
     check_repository();
     // check_sync();
 
-    // execute_cd(NOTES_REPOSITORY, "fzf" ,"--preview=\'cat {}\' --preview-window=right:70%:wrap");
-    // file=$(fzf --preview="cat {}" --preview-window=right:70%:wrap) && [ -n "$file" ] && vim "$file"
-
-    // execute_cd(NOTES_REPOSITORY, "file=$(fzf --preview=\"cat {}\" --preview-window=right:70%:wrap)", "&& [ -n \"$file\" ] && vim \"$file\"");
-
-    // execute_cd(NOTES_REPOSITORY, "vim", "todo.md", 1);
-    // execute_cd(NOTES_REPOSITORY, "vim", "`fzf --preview=\"cat {}\" --preview-window=right:70%:wrap`", 0);
-    // execute_cd(NOTES_REPOSITORY, "git add . && git commit -m", buffer, 1);
-
-    // TODO: `push to upstream via `git push -u origin main`
-
-    // Sync from remote to get latest changes
-    // CODE HERE
-
-    // Usage: cnotes [-n | --new ] [-a | --add] <command>
-    // 
-    // Initialize a box to store notebooks
-    //     setup    Create an empty box to store your notebooks
-    //     
-
+    
     // no arguments passed
     if (argc == 1) { 
         printf(USAGE);
@@ -69,14 +50,18 @@ int main(int argc, char** argv) {
            printf(" - Git Email: %s\n", GIT_EMAIL);
            exit(EXIT_SUCCESS);
         } else if (strcmp(argv[1], "list") == 0) {
-            // TODO: Do this..
-            char note_name[1024] = "";
-            execute_cd_out(LOCAL_REPO_PATH, "fzf" ,"--preview=\'cat {}\' --preview-window=right:70%:wrap", note_name, 1024);
-            printf("Returned output is %s", note_name);
+            char *note_name = execute_cd_out(LOCAL_REPO_PATH, "fzf" ,"--preview=\'cat {}\' --preview-window=right:70%:wrap");
+            if (strlen(note_name) > 0) { // If the user selects a file, simply open it up in Vim
+                execute_cd(LOCAL_REPO_PATH, "vim", note_name, 0);
+            }
+            free(note_name);
+            exit(EXIT_SUCCESS);
         } else if (strcmp(argv[1], "sync") == 0) {
             // TODO: Do this...
-            printf(" - Performing git pull\n");
-            printf(" - Performing git push\n");
+            // printf(" - Performing git pull\n");
+            // printf(" - Performing git push\n");
+            check_sync();
+            exit(EXIT_SUCCESS);
         } else {
             printf("noets: '%s' is not a noets command.\n\n", argv[1]);
             printf(USAGE);
@@ -115,13 +100,16 @@ int main(int argc, char** argv) {
                 snprintf(file_to_remove, 4096, "%s/%s", LOCAL_REPO_PATH, argv[2]);
             #endif
 
-            printf("File path is: %s\n", file_to_remove);
-
+            // printf("File path is: %s\n", file_to_remove);
             if (file_exists(file_to_remove)) {
                 execute("rm", file_to_remove, 1);
+            } else {
+                fprintf(stderr, "Note does not exist!\n");
+                exit(EXIT_FAILURE);
             }
         }
     }
-
+    
+    exit(EXIT_FAILURE);
     // TODO: Tab completions for `remove` 
 }

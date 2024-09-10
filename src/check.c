@@ -96,6 +96,7 @@ void check_repository() {
             // After cloning simply configure git username and email
             execute_cd(LOCAL_REPO_PATH, "git config user.name", GIT_USERNAME, 1);
             execute_cd(LOCAL_REPO_PATH, "git config user.email", GIT_EMAIL, 1);
+            exit(EXIT_SUCCESS);
 
         } else {
             printf(" - Nothing to do, exiting program...\n");
@@ -153,53 +154,30 @@ void check_repository_status() {
 }
 */
 
-/*
 void check_sync() {
-    char status_output[1024];
-    // char rev_parse_output[1024];
-    // char commit_count_output[1024];
-    // char command[1024];
+    // First perform a fetch then merge ASAP
+    execute_cd(LOCAL_REPO_PATH, "git fetch", "--all", 1); 
+    char *status_output = execute_cd_out(LOCAL_REPO_PATH, "git status", "--porcelain --branch");
 
-    // Get the current branch name
-    // execute_cd(NOTES_REPOSITORY, "git rev-parse", "--abbrev-ref HEAD");
-    // execute_cd_out(NOTES_REPOSITORY, "git rev-parse", "--abbrev-ref HEAD", rev_parse_output, sizeof(rev_parse_output));
-    // rev_parse_output[strcspn(rev_parse_output, "\n")] = '\0'; // Remove newline
+    // Check if the local branch is behind or ahead of the remote branch
+    if (strstr(status_output, "behind")) {
+        printf("The repository is behind. Pulling changes...\n");
+        execute_cd(LOCAL_REPO_PATH, "git", "merge", 1);
+    } 
 
-    // Fetch latest changes from remote
-    // execute_cd_out(NOTES_REPOSITORY, "git fetch", "--all", status_output, sizeof(status_output));
-    execute_cd(LOCAL_REPO_PATH, "git remote", "update");
-
-    // Check the status of the current branch
-    // snprintf(command, sizeof(command), "git status", "--porcelain -b");
-    execute_cd_out(LOCAL_REPO_PATH, "git status", "-uno", status_output, sizeof(status_output));
-
-    // Look for the line indicating that we are behind the remote branch
-    if (strstr(status_output, "Your branch is behind")) {
-        printf("You are behind the remote branch.\n");
-    } else if (strstr(status_output, "Your branch is ahead")) {
-        printf("You are ahead of the remote branch.\n");
-    } else if (strstr(status_output, "No commits yet")) {
-        printf("No commits yet");
-    } else {
-        printf("Your branch is up to date with the remote.\n");
+    // Check for untracked or modified files and commit them if necessary
+    if (strstr(status_output, " M") || strstr(status_output, "??")) {
+        execute_cd(LOCAL_REPO_PATH, "git add", ".", 1);
+        execute_cd(LOCAL_REPO_PATH, "git commit", "-m 'Auto-commit changes'", 1);
     }
 
-    // Get updates from remote
-    // execute_cd(NOTES_REPOSITORY, "git remote", "update");
-
-    // Check if behind
-    // execute_cd(NOTES_REPOSITORY, "git status", "--porcelain");
-
-    // execute_cd(NOTES_REPOSITORY, "git merge", "main");
-    // execute_cd(NOTES_REPOSITORY, "git pull", "origin main", 0);
-    // execute_cd(NOTES, const char *command, const char *args, int failsafe)
-
-    // const char* upstream = (argc > 1) ? argv[1] : "@{u}";
-    // Prepare the Git commands
-
-    // execute_cd(NOTES_REPOSITORY, "git push", "-u origin main", 0);
+    if (strstr(status_output, "ahead")) {
+        printf("The repository is ahead. Pushing changes...\n");
+        execute_cd(LOCAL_REPO_PATH, "git", "push", 1);
+    } else {
+        printf("The repository is up-to-date.\n");
+    }
 }
-*/
 
 void check_configuration_file(const char* filepath) {
     FILE *file_ptr = fopen(filepath, "r");

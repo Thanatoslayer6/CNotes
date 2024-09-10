@@ -1,6 +1,7 @@
 #include <utils.h>
 #include <dirent.h>
 #include <errno.h>
+#include <string.h>
 #include <time.h>
 
 int file_exists(const char *filename)
@@ -17,7 +18,6 @@ int file_exists(const char *filename)
 
 char *file_read(const char *filepath) {
     FILE *file_ptr = fopen(filepath, "rb"); // Read file
-    size_t i = 0, c = 0;
 
     if (file_ptr == NULL)
     {
@@ -156,26 +156,90 @@ char* get_time() {
     return buffer;
 }
 
-void execute_cd_out(const char* cddir, const char *command, const char* args, char *output, size_t output_size) {
+char* execute_cd_out(const char* cddir, const char *command, const char* args) {
     char full_command[4096] = "";
-    snprintf(full_command, 4096, "cd %s && %s %s", cddir, command, args);
 
-    FILE *fp;
-    fp = popen(full_command, "r");
+    snprintf(full_command, 4096, "cd %s && %s %s", cddir, command, args);
+    FILE *fp = popen(full_command, "r");
+
     if (fp == NULL) {
-        // perror("popen");
-        // fprintf(stderr, "")
-        fprintf(stderr, " - ERROR: Failed to run `popen`");
-        exit(EXIT_FAILURE);
+        fprintf(stderr, " - ERROR: Failed to run `popen`\n");
+        return NULL;
     }
 
-    if (fgets(output, output_size, fp) == NULL) { 
+    char buffer[1024];
+    size_t bytes_read;
+    size_t contents_size = 4096;
+    char *contents = (char*)malloc(sizeof(char) * contents_size);
+    if (contents == NULL) {
+        fprintf(stderr, " - ERROR: Failed to allocate memory to `contents`\n");
+        pclose(fp);
+        return NULL;
+    }
+    contents[0] = '\0';
+
+    // Read the command output
+    while ((bytes_read = fread(buffer, 1, sizeof(buffer), fp)) > 0) {
+        // Check if we need more space in the output buffer
+        if (contents_size < strlen(contents) + bytes_read + 1) {
+            contents_size *= 2; // Double the buffer size
+            char *new_output = realloc(contents, contents_size);
+            if (new_output == NULL) {
+                fprintf(stderr, "Failed to reallocate memory\n");
+                free(contents);
+                pclose(fp);
+                return NULL;
+            }
+            contents = new_output;
+        }
+
+        // Append the read data to the output
+        strncat(contents, buffer, bytes_read);
+    }
+
+    // Null-terminate the output string
+    if (contents_size > 0) {
+        contents[contents_size - 1] = '\0';
+    }
+
+    // Close the process
+    if (pclose(fp) == -1) {
+        fprintf(stderr, "Failed to close process stream: %s\n", strerror(errno));
+    }
+
+    return contents;
+
+
+    // char *contents = (char *)malloc((bytes + 1) * sizeof(char));
+    // size_t bytes_read = fread(contents, 1, bytes, fp);
+    // if (bytes_read != bytes)
+    // {
+    //     perror("Error reading command output!");
+    //     free(contents);
+    //     pclose(fp);
+    //     return NULL;
+    // }
+    // contents[bytes] = '\0';
+    // pclose(fp);
+
+    // return contents;
+
+
+    // Read the command output
+    // if (fgets(output, output_size, fp) == NULL) { 
         // perror("fgets");
         // fprintf(stderr, " - ERROR: No note selected");
         // printf(" - No note selected, exiting program...\n");
-        pclose(fp);
-        exit(EXIT_FAILURE);
-    }
-
-    pclose(fp);
+    //     pclose(fp);
+    //     exit(EXIT_FAILURE);
+    // }
+    // char c;
+    // while (1) {
+    //     c = fgetc(fp);
+    //     if (c != EOF) {
+    //         output[]
+    //     } else {
+    //         break;
+    //     }
+    // }
 }

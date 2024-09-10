@@ -1,20 +1,19 @@
 #include "utils.h"
-#include <check.h>
-#include <stdio.h>
-#include <string.h>
+#include "check.h"
 
 int main(int argc, char** argv) {
 
     // printf(BANNER_ART);
 
     // Check app requirements
-    check_command("git");
-    check_command("vim");
-    check_command("fzf");
+    // TODO: There is a bottleneck here, it costs around 200ms, so probably the best way is to not check at all?
+    // check_command("git");
+    // check_command("vim");
+    // check_command("fzf"); // TODO: Make fzf an optional command?
 
     // Check configuration
-    check_configuration();
-    check_repository();
+    // check_configuration();
+    // check_repository();
     // check_sync();
 
     
@@ -57,9 +56,6 @@ int main(int argc, char** argv) {
             free(note_name);
             exit(EXIT_SUCCESS);
         } else if (strcmp(argv[1], "sync") == 0) {
-            // TODO: Do this...
-            // printf(" - Performing git pull\n");
-            // printf(" - Performing git push\n");
             check_sync();
             exit(EXIT_SUCCESS);
         } else {

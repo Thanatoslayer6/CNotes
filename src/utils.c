@@ -1,7 +1,6 @@
 #include <utils.h>
 #include <dirent.h>
 #include <errno.h>
-#include <string.h>
 #include <time.h>
 
 int file_exists(const char *filename)

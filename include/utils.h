@@ -1,6 +1,7 @@
 #pragma once
-
-
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define USAGE \
     "Usage: noets [-v | --version] [-h | --help] <command> [arguments]\n\n"\
@@ -10,6 +11,7 @@
     "    list      Lists all of the notes in fzf\n"\
     "    sync      Synchronize to remote (push/pull)\n"\
     "    config    Shows the configuration used\n" \
+    "    setup     Creates a configuration\n" \
 
 #define BANNER_ART \
       "\n                              dP           \n" \
@@ -29,14 +31,11 @@
 
 #ifdef HAVEWIN
  #define HOMEENV "USERPROFILE"
- #define CONFIGPATH "%s\\.config\\noets\\config.toml"
+ #define CONFIGPATH "%s\\AppData\\Local\\noets\\config.toml"
 #elif HAVEUNIX
  #define HOMEENV "HOME"
  #define CONFIGPATH "%s/.config/noets/config.toml"
 #endif
-
-#include <stdio.h>
-#include <stdlib.h>
 
 int file_exists(const char *filename);
 char *file_read(const char *filepath);

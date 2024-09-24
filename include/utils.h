@@ -8,7 +8,7 @@
     "These are all the commands for utilizing this program\n" \
     "    add       Adds a new note\n" \
     "    remove    Removes an existing note\n" \
-    "    list      Lists all of the notes in fzf\n"\
+    "    list      Lists all of the notes\n"\
     "    sync      Synchronize to remote (push/pull)\n"\
     "    config    Shows the configuration used\n" \
     "    setup     Creates a configuration\n" \
@@ -40,7 +40,6 @@
 int file_exists(const char *filename);
 char *file_read(const char *filepath);
 char *read_line(const char *prompt);
-char *get_time();
 int prompt(const char* text);
 void execute(const char* command, const char* args, int show_debug);
 void execute_cd(const char* cddir, const char* command, const char* args, int show_debug);

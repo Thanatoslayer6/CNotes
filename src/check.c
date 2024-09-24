@@ -4,8 +4,10 @@
 
 char LOCAL_REPO_PATH[2048];
 char REMOTE_REPO_URL[2048];
+char CONFIG_FILE_PATH[2048];
 char GIT_USERNAME[2048];
 char GIT_EMAIL[2048];
+char EDITOR[128];
 
 void check_command(const char* command_name) {
     char command[256];
@@ -26,20 +28,21 @@ void check_command(const char* command_name) {
 
 void check_configuration() {
     // First check if there's a file at ~/.config/noets/config.toml
-    char *home = getenv(HOMEENV);
-    char filename[4096] = "";
+    char *home = getenv(HOMEENV); // Gets the home directory
+    char *default_editor = getenv("EDITOR"); // Gets the default editor
+    // char config_file_path[4096] = "";
 
     if (!home) {
         fprintf (stderr, "User home environment not found.\n");
         exit(EXIT_FAILURE);
     }
 
-    snprintf(filename, 4096, CONFIGPATH, home);
- 
-    check_configuration_file(filename);
+    snprintf(CONFIG_FILE_PATH, 4096, CONFIGPATH, home);
+
+    check_configuration_file();
 
     // Read the file and parse the contents
-    char *file_contents = file_read(filename);
+    char *file_contents = file_read(CONFIG_FILE_PATH);
     char errbuf[200];
 
 	toml_table_t *tbl = toml_parse(file_contents, errbuf, sizeof(errbuf));
@@ -54,37 +57,53 @@ void check_configuration() {
         fprintf(stderr, "ERROR: Can't parse 'local_repository_path', %s\n", errbuf);
         exit(EXIT_FAILURE);
     }
+    snprintf(LOCAL_REPO_PATH, sizeof(LOCAL_REPO_PATH), local_repository_path.u.s);
 
     toml_value_t remote_repository_url = toml_table_string(tbl, "remote_repository_url");
     if (!remote_repository_url.ok) {
         fprintf(stderr, "ERROR: Can't parse 'remote_repository_url', %s\n", errbuf);
         exit(EXIT_FAILURE);
     }
+    snprintf(REMOTE_REPO_URL, sizeof(REMOTE_REPO_URL), remote_repository_url.u.s);
 
     toml_value_t git_username = toml_table_string(tbl, "git_username");
     if (!git_username.ok) {
         fprintf(stderr, "ERROR: Can't parse 'git_username', %s\n", errbuf);
         exit(EXIT_FAILURE);
     }
+    snprintf(GIT_USERNAME, sizeof(GIT_USERNAME), git_username.u.s);
 
     toml_value_t git_email = toml_table_string(tbl, "git_email");
     if (!git_email.ok) {
         fprintf(stderr, "ERROR: Can't parse 'git_email', %s\n", errbuf);
         exit(EXIT_FAILURE);
     }
-
-    snprintf(LOCAL_REPO_PATH, sizeof(LOCAL_REPO_PATH), local_repository_path.u.s);
-    snprintf(REMOTE_REPO_URL, sizeof(REMOTE_REPO_URL), remote_repository_url.u.s);
-    snprintf(GIT_USERNAME, sizeof(GIT_USERNAME), git_username.u.s);
     snprintf(GIT_EMAIL, sizeof(GIT_EMAIL), git_email.u.s);
+
+    toml_value_t editor = toml_table_string(tbl, "editor");
+    if (editor.ok) {
+        snprintf(EDITOR, sizeof(EDITOR), editor.u.s);
+    } else {
+        #ifdef HAVEWIN
+            printf("WARNING: Editor is not set, defaulting to notepad\n");
+            snprintf(EDITOR, sizeof(EDITOR), "notepad");
+        #elif HAVEUNIX
+            if (default_editor) {
+                snprintf(EDITOR, sizeof(EDITOR), default_editor);
+            } else {
+                printf("WARNING: Editor is not set, defaulting to vi\n");
+                snprintf(EDITOR, sizeof(EDITOR), "vi");
+            }
+        #endif
+    }
 
     // Free memory
     toml_free(tbl);
     free(file_contents);
 }
 
-void check_configuration_file(const char* filepath) {
-    FILE *file_ptr = fopen(filepath, "r");
+void check_configuration_file() {
+    FILE *file_ptr = fopen(CONFIG_FILE_PATH, "r");
 
     // Check if file exists, if first time, tell user to generate default config
     if (!file_ptr) {
@@ -99,7 +118,7 @@ void check_configuration_file(const char* filepath) {
             "git_email = \"username@github.com\"\n"
             "\nNote: Make sure that 'local_repository_path' is an absolute path NOT ending with '/'.\n";
 
-        fprintf(stderr, generate_info_text, filepath);
+        fprintf(stderr, generate_info_text, CONFIG_FILE_PATH);
         exit(EXIT_FAILURE);
     }
 
@@ -193,7 +212,9 @@ void check_sync() {
     // Check for untracked or modified files and commit them if necessary
     if (strstr(status_output, " M") || strstr(status_output, "??")) {
         execute_cd(LOCAL_REPO_PATH, "git add", ".", 1);
-        execute_cd(LOCAL_REPO_PATH, "git commit", "-m 'Auto-commit changes'", 1);
+        execute_cd(LOCAL_REPO_PATH, "git commit", "-m 'Auto commit message'", 1);
+        // printf("The repository is ahead. Pushing changes...\n");
+        execute_cd(LOCAL_REPO_PATH, "git", "push", 1);
     }
 
     if (strstr(status_output, "ahead")) {

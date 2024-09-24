@@ -138,23 +138,6 @@ char* read_line(const char* prompt) {
     return line;
 }
 
-char* get_time() {
-    // Get the current time
-    time_t now;
-    time(&now);
-
-    // Convert to local time
-    struct tm *local = localtime(&now);
-
-    // Buffer to hold the formatted time string
-    char *buffer = (char*)malloc(sizeof(char) * 64);
-
-    // Format the time as YYYY-MM-DD HH:MM:SS
-    strftime(buffer, sizeof(buffer), "\"%Y-%m-%d %H:%M:%S\"", local);
-
-    return buffer;
-}
-
 char* execute_cd_out(const char* cddir, const char *command, const char* args) {
     char full_command[4096] = "";
 

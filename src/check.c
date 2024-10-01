@@ -212,7 +212,7 @@ void check_sync() {
     // Check for untracked or modified files and commit them if necessary
     if (strstr(status_output, " M") || strstr(status_output, "??")) {
         execute_cd(LOCAL_REPO_PATH, "git add", ".", 1);
-        execute_cd(LOCAL_REPO_PATH, "git commit", "-m 'Auto commit message'", 1);
+        execute_cd(LOCAL_REPO_PATH, "git commit", "-m \"Auto commit message\"", 1);
         // printf("The repository is ahead. Pushing changes...\n");
         execute_cd(LOCAL_REPO_PATH, "git", "push", 1);
     }
